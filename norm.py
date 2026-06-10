@@ -12,7 +12,7 @@ class ScaleNorm(nn.Module):
             normalized_shape = (normalized_shape,)
         self.normalized_shape = tuple(normalized_shape)
         self.eps = eps
-        self.weight = nn.Parameter(torch.empty(self.normalized_shape))
+        self.weight = nn.Parameter(torch.empty(1))
         if bias:
             self.bias = nn.Parameter(torch.empty(self.normalized_shape))
         else:
