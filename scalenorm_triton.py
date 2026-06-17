@@ -10,8 +10,10 @@ from torch import Tensor, Size
 import triton
 import triton.language as tl
 
+
 def maybe_contiguous_lastdim(x):
     return x.contiguous() if x is not None and x.stride(-1) != 1 else x
+
 
 def triton_autotune_configs():
     max_threads_per_block = 1024
@@ -24,6 +26,7 @@ def triton_autotune_configs():
         for w in [1, 2, 4, 8, 16, 32]
         if w * warp_size <= max_threads_per_block
     ]
+
 
 @triton.autotune(configs=triton_autotune_configs(), key=["N", "HAS_BIAS"])
 @triton.jit
@@ -54,6 +57,7 @@ def _scale_norm_fwd_kernel(
         b = tl.load(B + cols, mask=mask, other=0.0).to(tl.float32)
         y = y + b
     tl.store(Y + cols, y, mask=mask)
+
 
 @triton.autotune(configs=triton_autotune_configs(), key=["N", "HAS_BIAS"])
 @triton.jit
@@ -103,6 +107,7 @@ def _scale_norm_bwd_kernel(
     tl.store(DG + row_block_id, dg)
     if HAS_BIAS:
         tl.store(DB + row_block_id * N + cols, db, mask=mask)
+
 
 class ScaleNormFn(torch.autograd.Function):
     @staticmethod
@@ -167,6 +172,7 @@ class ScaleNormFn(torch.autograd.Function):
         db = _db.sum(0).to(ctx.bias_dtype) if ctx.has_bias else None
         return dx, dg, db, None
 
+
 class ScaleNorm(nn.Module):
     def __init__(
         self,
@@ -202,5 +208,4 @@ class ScaleNorm(nn.Module):
         x_2d = input.reshape(-1, self.C)
         bias_flat = self.bias.reshape(-1) if self.bias is not None else None
         out = ScaleNormFn.apply(x_2d, g, bias_flat, self.eps)
-
         return out.reshape(input.shape)
