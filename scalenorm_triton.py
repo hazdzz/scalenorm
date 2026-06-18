@@ -173,7 +173,7 @@ class ScaleNormFn(torch.autograd.Function):
         return dx, dg, db, None
 
 
-class ScaleNorm(nn.Module):
+class FusedScaleNorm(nn.Module):
     def __init__(
         self,
         normalized_shape: Union[int, List[int], Size],
